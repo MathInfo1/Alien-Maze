@@ -16,6 +16,7 @@ class Display():
     def __init__(self, sck, mosi, miso, cs, dc, rst, led, orientation="landscape"):
         if orientation == "landscape" or orientation == "horizontal":
             self.screenSize = (480, 320)
+            self.screenSize = (320, 480)
         else:
             self.screenSize = (320, 480)
         
@@ -107,7 +108,7 @@ class Display():
 
         self.command(0x3A, 0x66) # Interface Pixel Format
         if self.orientation == "landscape" or self.orientation == "horizontal":
-            self.command(0x36, 0xE8) # Memory Access Control
+            self.command(0x36, 0xC8) # Memory Access Control
         else:
             self.command(0x36, 0x88)
 
@@ -173,26 +174,3 @@ class Display():
                 self.dc.value(1)
                 self.spi.write(output)
                 self.cs.value(1)
-
-    def drawQuad(self, tl, bl, tr, br, color):
-        # print(tl, bl, tr, br)
-        try:
-            sl1 = (tr[1] - tl[1]) / (tr[0] - tl[0])
-            sl2 = (br[1] - bl[1]) / (br[0] - bl[0])
-            for x in range(480):
-                if not tl[0] <= x <= tr[0]: continue
-                y1 = max(0, int(sl1 * (x - tl[0]) + tl[1]))
-                y2 = min(319, int(sl2 * (x - bl[0]) + bl[1]))
-                self.setWindow(x, y1, x, y2)
-                self.cs.value(0)
-                self.dc.value(0)
-                self.spi.write(b'\x2C')
-                self.dc.value(1)
-                dist = (tr[3] - tl[3]) / (tr[0] - tl[0]) * (x - tl[0]) + tl[3]
-                colorP = 0.6 + 0.4 * (1 - dist / 30)
-                shadedColor = (int(colorP * convertColor(color[0])), int(colorP * convertColor(color[1])), int(colorP * convertColor(color[2])))
-                self.spi.write(bytes([shadedColor[0] & 0xFC, shadedColor[1] & 0xFC, shadedColor[2] & 0xFC]) * (y2 - y1 + 1))
-                self.cs.value(1)
-        except ZeroDivisionError as e:
-            print(e)
-
